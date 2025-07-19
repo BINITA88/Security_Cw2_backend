@@ -20,15 +20,15 @@ const BLOCK_DURATION = 15 * 60 * 1000;
 const MAX_OTP_ATTEMPTS = 3;
 
 // ✅ Keep this at the top of your file
-const JWT_SECRET = 'myhardcodedsecret'; // Use a long random string in real apps
 
-// ✅ Then define your generateToken function
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, JWT_SECRET, {
     expiresIn: '24h',
   });
 };
-
 const refreshToken = async (req, res) => {
   const { userId } = req.body;
 

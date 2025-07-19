@@ -185,22 +185,33 @@ const axios = require("axios");
 const rateLimit = require("express-rate-limit");
 const userModel = require("../models/userModel");
 
-// use secret from .env
-const JWT_SECRET = process.env.JWT_SECRET || "fallbackSecret";
 
-// ================== AUTH GUARD ==================
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
 const authGuard = async (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1];
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({
+      success: false,
+      message: "Authorization header missing",
+    });
+  }
+
+  const token = authHeader.split(" ")[1];
 
   if (!token) {
     return res.status(401).json({
       success: false,
-      message: "No token provided",
+      message: "Token not found",
     });
   }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+
+    // 🔥 THIS is where we use your schema
     const user = await userModel.findById(decoded.id).select("-password");
 
     if (!user) {
@@ -210,17 +221,13 @@ const authGuard = async (req, res, next) => {
       });
     }
 
+    // ✅ Set req.user for later use
     req.user = user;
-    console.log("user",user)
+
     next();
   } catch (error) {
-    if (error.name === "TokenExpiredError") {
-      return res.status(401).json({
-        success: false,
-        message: "Token expired. Please log in again.",
-      });
-    }
-    res.status(500).json({
+    console.error("authGuard error:", error);
+    res.status(401).json({
       success: false,
       message: "Not authorized",
     });

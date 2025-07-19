@@ -11,6 +11,7 @@ const helmet = require("helmet");
 const csrf = require("csurf");
 const cookieParser = require("cookie-parser");
 
+
 // Creating an express app
 const app = express();
 
@@ -43,6 +44,7 @@ app.use(accessFromData());
 
 // use hpp to prevent http parameter pollution
 const hpp = require("hpp");
+const { default: Stripe } = require("stripe");
 app.use(hpp());
 app.use(express.urlencoded({ extended: true }));
 
@@ -85,7 +87,7 @@ app.use("/api/review", require("./routes/review&ratingRoutes"));
 app.use("/api/order", require("./routes/orderRoutes"));
 app.use("/api/khalti", require("./routes/paymentRoutes"));
 app.use("/api/admin", require("./routes/activityRoute"));
-
+app.use("/api/stripe",  require("./routes/stripe"));
 app.get("/api/csrf-token", csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });

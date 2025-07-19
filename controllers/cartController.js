@@ -4,36 +4,43 @@ const productModel = require("../models/productModel");
 const cartModel = require("../models/cartModel");
 const fs = require("fs");
 
-// add items to user cart
+
+// Add items to user cart
 const addToCart = async (req, res) => {
-  console.log(req.body);
   const { productId, quantity } = req.body;
-  const id = req.user.id;
-  console.log(id);
+
+  // ✅ Correct usage
+  const userId = req.user.id;
+  console.log("Cart add by user:", userId);
 
   try {
-    const user = await userModel.findById(id);
+    const user = await userModel.findById(userId);
     if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found!",
       });
     }
+
+    // ✅ Check if product already in cart for this user
     const existingProduct = await cartModel.findOne({
       productId: productId,
-      userId: id,
+      userId: userId, // ✅ fix here
       status: "active",
     });
+
     if (existingProduct) {
       return res.json({
         success: false,
         message: "Product already in cart!",
       });
     }
+
+    // ✅ Create and save new cart item
     const cart = new cartModel({
-      productId: productId,
-      userId: id,
-      quantity: quantity,
+      productId,
+      userId, // ✅ fix here
+      quantity,
     });
 
     await cart.save();
@@ -43,13 +50,16 @@ const addToCart = async (req, res) => {
       message: "Product added to cart successfully!",
     });
   } catch (error) {
-    console.log(error);
+    console.error("Add to cart error:", error);
     res.status(500).json({
       success: false,
       message: "Internal Server Error!",
     });
   }
 };
+
+
+
 
 // remove items from user cart
 const removeFromCart = async (req, res) => {

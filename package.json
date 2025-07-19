@@ -32,6 +32,7 @@
     "nodemailer": "^7.0.5",
     "nodemon": "^3.1.10",
     "speakeasy": "^2.0.0",
+    "stripe": "^18.3.0",
     "xss": "^1.0.15"
   },
   "devDependencies": {

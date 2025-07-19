@@ -79,7 +79,7 @@ const options = {
   cert: fs.readFileSync(path.join(__dirname, '../certs/localhost.pem')),
 
 };
-// Configuring Routes of User
+
 app.use("/api/user", require("./routes/userRoutes"));
 app.use("/api/product", require("./routes/productRoutes"));
 app.use("/api/cart", require("./routes/cartRoutes"));

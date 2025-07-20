@@ -91,7 +91,7 @@ app.use("/api/stripe",  require("./routes/stripe"));
 app.get("/api/csrf-token", csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
-
+// asad
 app.use((err, req, res, next) => {
   if (err.code === "EBADCSRFTOKEN") {
     res.status(403).json({ success: false, message: "Invalid CSRF token" });

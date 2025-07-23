@@ -2,8 +2,7 @@ const Joi = require("joi");
 
 // Schema for user registration
 const signupSchema = Joi.object({
-  firstName: Joi.string().min(2).max(50).required(),
-  lastName: Joi.string().min(2).max(50).required(),
+ 
   userName: Joi.string().min(3).max(30).required(),
   email: Joi.string().email().required(),
   phoneNumber: Joi.string()

@@ -1,10 +1,11 @@
 const router = require("express").Router();
 const userController = require("../controllers/userControllers");
 const {
-  authGuard,
+  
   verifyRecaptcha,
   forgotPasswordLimiter,
-} = require("../middleware/authGuard");
+  bookishProtectAuth,
+} = require("../middleware/protect");
 const rateLimit = require("express-rate-limit");
 const {
   signupSchema,
@@ -13,20 +14,20 @@ const {
   forgotPasswordSchema,
   resetPasswordSchema,
 } = require("../models/signupSchema");
-const { validateRequest } = require("../middleware/authGuard");
+const { validateRequest } = require("../middleware/protect");
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
-  message: "Too many login attempts. Please try again after 15 minutes.",
+  message: "Too many login attempts. Please try again after 10 minutes.",
 });
 const otpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 3,
-  message: "Too many OTP attempts. Please try again after 15 minutes.",
+  message: "Too many OTP attempts. Please try again after 10 minutes.",
 });
 
-// Creating user registration route
+
 router.post(
   "/create",
   validateRequest(signupSchema),
@@ -34,7 +35,7 @@ router.post(
 );
 
 // Creating user login route
-router.post("/login", userController.loginUser);
+router.post("/login", userController.bookishUserLogin);
 
 router.post(
   "/verifyOTP",
@@ -47,10 +48,10 @@ router.post(
 router.get("/current", userController.getCurrentUser);
 
 // refresh token
-router.post("/refresh-token", authGuard, userController.refreshToken);
+router.post("/refresh-token", bookishProtectAuth, userController.refreshToken);
 
 // get me
-router.get("/getMe", authGuard, userController.getMe);
+router.get("/getMe", bookishProtectAuth, userController.getMe);
 
 router.post(
   "/forgot_password",
@@ -70,7 +71,7 @@ router.post(
 router.post("/profile_picture", userController.uploadProfilePicture);
 
 // update user details
-router.put("/update", authGuard, userController.editUserProfile);
+router.put("/update", bookishProtectAuth, userController.editUserProfile);
 
 // verify registration otp
 router.post("/verify_registration_otp", userController.verifyRegistrationOtp);

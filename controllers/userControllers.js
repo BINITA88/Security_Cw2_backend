@@ -25,10 +25,9 @@ const MAX_OTP_ATTEMPTS = 3;
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const generateToken = (userId) => {
-  return jwt.sign({ id: userId }, JWT_SECRET, {
-    expiresIn: '24h',
-  });
+  return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '30d' });
 };
+
 const refreshToken = async (req, res) => {
   const { userId } = req.body;
 
@@ -64,80 +63,214 @@ const refreshToken = async (req, res) => {
     });
   }
 };
-const createUser = async (req, res) => {
-  const { firstName, lastName, userName, email, phoneNumber, password } =
-    req.body;
+// const createUser = async (req, res) => {
+//   const { userName, email, phoneNumber, password } =
+//     req.body;
 
-  if (
-    !firstName ||
-    !lastName ||
-    !userName ||
-    !email ||
-    !phoneNumber ||
-    !password
-  ) {
-    return res.json({
-      success: false,
-      message: "Please enter all details!",
-    });
+//   if (
+
+//     !userName ||
+//     !email ||
+//     !phoneNumber ||
+//     !password
+//   ) {
+//     return res.json({
+//       success: false,
+//       message: "Please enter all details!",
+//     });
+//   }
+//   const passwordRegex =
+//     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
+//   if (!passwordRegex.test(password)) {
+//     return res.json({
+//       success: false,
+//       message:
+//         "Your Password must contain at least 1 lowercase letter, 1 uppercase letter, 1 number, 1 special character, and be at least 6 characters long.",
+//     });
+//   }
+
+//   try {
+//     const existingUser = await userModel.findOne({ email });
+
+//     if (existingUser) {
+//       return res.json({
+//         success: false,
+//         message: "User already exists!",
+//       });
+//     }
+
+//     // Generate OTP
+//     const otp = Math.floor(100000 + Math.random() * 900000);
+//     console.log(`Generated OTP: ${otp}`); // Log the OTP
+
+//     // Save OTP in user model
+//     const otpExpires = Date.now() + 10 * 60 * 1000; // OTP valid for 10 minutes
+//     const newUser = new userModel({
+
+//       userName,
+//       email,
+//       phoneNumber,
+//       password, 
+//       resetPasswordOTP: otp,
+//       resetPasswordExpires: otpExpires,
+//       isVerified: false,
+//     });
+
+//     await newUser.save();
+
+//     // Send OTP to user's email
+//     console.log(`Sending OTP to email: ${email}`); // Log email
+//     await sendRegisterOtp(email, otp);
+
+//     res.json({
+//       success: true,
+//       message: "User registered successfully! OTP sent to your email.",
+//     });
+//   } catch (error) {
+//     console.error("Error in createUser:", error.message);
+//     res.status(500).json({
+//       success: false,
+//       message: "Internal server error!",
+//     });
+//   }
+// };
+
+
+const { encrypt } = require("../utils/encryption");
+
+// // ✅ Register User (Plain Text)
+// const createUser = async (req, res) => {
+//   const { userName, email, phoneNumber, password } = req.body;
+
+//   if (!userName || !email || !phoneNumber || !password) {
+//     return res.status(400).json({ success: false, message: "Please enter all details!" });
+//   }
+
+//   const passwordRegex =
+//     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
+
+//   if (!passwordRegex.test(password)) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "Password must contain uppercase, lowercase, number, special character and be 6+ characters long",
+//     });
+//   }
+
+//   try {
+//     const normalizedEmail = email.toLowerCase();
+
+//     const existingUser = await userModel.findOne({ email: normalizedEmail });
+//     if (existingUser) {
+//       return res.status(400).json({ success: false, message: "User already exists!" });
+//     }
+
+//     const otp = Math.floor(100000 + Math.random() * 900000);
+//     const otpExpires = Date.now() + 10 * 60 * 1000;
+
+//     console.log(`📩 OTP for ${normalizedEmail}: ${otp}`);
+
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     const newUser = new userModel({
+//       userName,
+//       email: normalizedEmail,
+//       phoneNumber,
+//       password: hashedPassword,
+//       storedOTP: otp,
+//       storedOTPExpires: otpExpires,
+//       isVerified: false,
+//     });
+
+//     await newUser.save();
+//     await sendRegisterOtp(normalizedEmail, otp);
+
+//     res.json({
+//       success: true,
+//       message: "User registered successfully! OTP sent to your email.",
+//     });
+//   } catch (error) {
+//     console.error("createUser error:", error.message);
+//     res.status(500).json({ success: false, message: "Internal server error!" });
+//   }
+// };
+
+
+
+// ✅ Register User (Plain Text)
+const createUser = async (req, res) => {
+  const { userName, email, phoneNumber, password } = req.body;
+
+  if (!userName || !email || !phoneNumber || !password) {
+    return res.status(400).json({ success: false, message: "Please enter all details!" });
   }
+
   const passwordRegex =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
+
   if (!passwordRegex.test(password)) {
-    return res.json({
+    return res.status(400).json({
       success: false,
-      message:
-        "Password must contain at least 1 lowercase letter, 1 uppercase letter, 1 number, 1 special character, and be at least 6 characters long.",
+      message: "Password must contain uppercase, lowercase, number, special character and be 6+ characters long",
     });
   }
 
   try {
-    const existingUser = await userModel.findOne({ email });
+    const normalizedEmail = email.toLowerCase();
 
+    const existingUser = await userModel.findOne({ email: normalizedEmail });
     if (existingUser) {
-      return res.json({
-        success: false,
-        message: "User already exists!",
-      });
+      return res.status(400).json({ success: false, message: "User already exists!" });
     }
 
-    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
-    console.log(`Generated OTP: ${otp}`); // Log the OTP
+    const otpExpires = Date.now() + 10 * 60 * 1000;
 
-    // Save OTP in user model
-    const otpExpires = Date.now() + 10 * 60 * 1000; // OTP valid for 10 minutes
+    console.log(`📩 OTP for ${normalizedEmail}: ${otp}`);
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const newUser = new userModel({
-      firstName,
-      lastName,
       userName,
-      email,
+      email: normalizedEmail,
       phoneNumber,
-      password, // Password will be hashed after OTP verification
-      resetPasswordOTP: otp,
-      resetPasswordExpires: otpExpires,
+      password: hashedPassword,
+      storedOTP: otp,
+      storedOTPExpires: otpExpires,
       isVerified: false,
     });
 
     await newUser.save();
+    await sendRegisterOtp(normalizedEmail, otp);
 
-    // Send OTP to user's email
-    console.log(`Sending OTP to email: ${email}`); // Log email
-    await sendRegisterOtp(email, otp);
+    // ✅ Log activity after user creation
+    try {
+      const ActivityLog = require("../models/activityLogModel"); // if not already imported
+      await ActivityLog.create({
+        user: newUser._id,
+        action: "register_success",
+        ipAddress: req.ip === "::1" ? "127.0.0.1" : req.ip,
+        timestamp: new Date(),
+        details: {
+          email: newUser.email,
+          userAgent: req.headers["user-agent"],
+        },
+      });
+    } catch (logErr) {
+      console.error("⚠️ Failed to log activity:", logErr.message);
+    }
 
     res.json({
       success: true,
       message: "User registered successfully! OTP sent to your email.",
     });
   } catch (error) {
-    console.error("Error in createUser:", error.message);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error!",
-    });
+    console.error("createUser error:", error.message);
+    res.status(500).json({ success: false, message: "Internal server error!" });
   }
 };
 
+
+// ✅ Verify OTP and Encrypt Fields
 const verifyRegistrationOtp = async (req, res) => {
   const { email, otp, password } = req.body;
 
@@ -149,60 +282,113 @@ const verifyRegistrationOtp = async (req, res) => {
   }
 
   try {
-    const user = await userModel.findOne({ email });
+    const normalizedEmail = email.toLowerCase();
+    const user = await userModel.findOne({ email: normalizedEmail });
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found!",
-      });
+      return res.status(404).json({ success: false, message: "User not found!" });
     }
 
     if (user.isVerified) {
-      return res.status(400).json({
-        success: false,
-        message: "User is already verified!",
-      });
+      return res.status(400).json({ success: false, message: "User already verified!" });
     }
 
-    // Check OTP validity
-    if (user.resetPasswordOTP !== otp) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid OTP!",
-      });
+    if (parseInt(user.storedOTP) !== parseInt(otp)) {
+      return res.status(400).json({ success: false, message: "Invalid OTP!" });
     }
 
-    if (user.resetPasswordExpires < Date.now()) {
-      return res.status(400).json({
-        success: false,
-        message: "OTP has expired!",
-      });
+    if (user.storedOTPExpires < Date.now()) {
+      return res.status(400).json({ success: false, message: "OTP expired!" });
     }
 
-    // Hash the password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Update user details and set as verified
+    // Update and encrypt after verification
+    const hashedPassword = await bcrypt.hash(password, 10);
     user.password = hashedPassword;
     user.isVerified = true;
-    user.resetPasswordOTP = null;
-    user.resetPasswordExpires = null;
+    user.storedOTP = null;
+    user.storedOTPExpires = null;
+
+    // Encrypt only now
+    user.email = encrypt(normalizedEmail);
+    user.phoneNumber = encrypt(user.phoneNumber);
+
     await user.save();
 
     res.status(200).json({
       success: true,
-      message: "User verified and registered successfully!",
+      message: "User verified and sensitive data encrypted!",
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error!",
-    });
+    console.error("verifyRegistrationOtp error:", error.message);
+    res.status(500).json({ success: false, message: "Internal server error!" });
   }
 };
+
+
+// const verifyRegistrationOtp = async (req, res) => {
+//   const { email, otp, password } = req.body;
+
+//   if (!email || !otp || !password) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "Please provide email, OTP, and password.",
+//     });
+//   }
+
+//   try {
+//     const user = await userModel.findOne({ email });
+
+//     if (!user) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "User not found!",
+//       });
+//     }
+
+//     if (user.isVerified) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "User is already verified!",
+//       });
+//     }
+
+//     // Check OTP validity
+//     if (user.resetPasswordOTP !== otp) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid OTP!",
+//       });
+//     }
+
+//     if (user.resetPasswordExpires < Date.now()) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "OTP has expired!",
+//       });
+//     }
+
+//     const salt = await bcrypt.genSalt(10);
+//     const hashedPassword = await bcrypt.hash(password, salt);
+//     user.password = hashedPassword;
+
+
+//     user.isVerified = true;
+//     user.resetPasswordOTP = null;
+//     user.resetPasswordExpires = null;
+//     await user.save();
+
+//     res.status(200).json({
+//       success: true,
+//       message: "User verified and registered successfully!",
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Internal server error!",
+//     });
+//   }
+// };
 
 const googleLogin = async (req, res) => {
   console.log(req.body);
@@ -261,8 +447,7 @@ const googleLogin = async (req, res) => {
       });
 
       user = new userModel({
-        firstName: given_name,
-        lastName: family_name,
+ 
         email: email,
         userName: given_name,
         password: hashedPassword,
@@ -280,7 +465,7 @@ const googleLogin = async (req, res) => {
       (options = {
         expiresIn:
           Date.now() + process.env.JWT_TOKEN_EXPIRE * 24 * 60 * 60 * 1000 ||
-          "1d",
+          "30d",
       })
     );
 
@@ -290,8 +475,7 @@ const googleLogin = async (req, res) => {
       token: jwtToken,
       user: {
         id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
+   
         email: user.email,
         isAdmin: user.isAdmin,
         profilePicture: user.profilePicture,
@@ -473,125 +657,734 @@ const getUserByGoogleEmail = async (req, res) => {
 //   }
 // };
 
-const loginUser = async (req, res) => {
+// const bookishUserLogin = async (req, res) => {
+//   const { email, password, captchaToken } = req.body;
+
+//   const inputEmail = Array.isArray(email) ? email[0] : email;
+//   const inputPassword = Array.isArray(password) ? password[0] : password;
+//   const inputCaptcha = Array.isArray(captchaToken) ? captchaToken[0] : captchaToken;
+
+//   if (!inputEmail || !inputPassword || !inputCaptcha) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "Email, password, and CAPTCHA are required!",
+//     });
+//   }
+
+//   try {
+//     const foundUser = await userModel.findOne({ email: inputEmail });
+
+//     if (!foundUser) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "User not found",
+//       });
+//     }
+
+//     await ActivityLog.create({
+//       user: foundUser._id,
+//       action: "login_attempt",
+//       ipAddress: req.ip,
+//       details: { email: inputEmail },
+//     });
+
+//     if (foundUser.blockExpires && foundUser.blockExpires > Date.now()) {
+//       const remaining = Math.ceil((foundUser.blockExpires - Date.now()) / 60000);
+//       return res.status(429).json({
+//         success: false,
+//         message: `Account is temporarily blocked. Try again in ${remaining} minutes.`,
+//       });
+//     }
+
+//     const isPasswordValid = await bcrypt.compare(inputPassword, foundUser.password);
+//     if (!isPasswordValid) {
+//       foundUser.loginAttempts += 1;
+
+//       if (foundUser.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+//         foundUser.blockExpires = Date.now() + BLOCK_DURATION;
+//         await foundUser.save();
+
+//         return res.status(429).json({
+//           success: false,
+//           message: `Too many failed attempts. Account locked for ${Math.ceil(BLOCK_DURATION / 60000)} minutes.`,
+//         });
+//       }
+
+//       await foundUser.save();
+//       return res.status(400).json({
+//         success: false,
+//         message: "Incorrect password",
+//       });
+//     }
+
+//     foundUser.loginAttempts = 0;
+//     foundUser.blockExpires = null;
+//     await foundUser.save();
+
+//     const generatedOTP = speakeasy.totp({
+//       secret: "your-otp-secret-key" + foundUser._id,
+//       encoding: "base32",
+//     });
+
+//     foundUser.googleOTP = generatedOTP;
+//     foundUser.googleOTPExpires = Date.now() + 5 * 60 * 1000;
+//     await foundUser.save();
+
+//     console.log(`Generated OTP: ${generatedOTP}`);
+
+//     const emailTransport = nodemailer.createTransport({
+//       service: "gmail",
+//       auth: {
+//         user: "binitaacharya2003@gmail.com",
+//         pass: "wkrf xgup pojh nrlc",
+//       },
+//     });
+
+//     await emailTransport.sendMail({
+//       from: "binitaacharya2003@gmail.com",
+//       to: foundUser.email,
+//       subject: "Bookish Login OTP",
+//       text: `Your OTP code is: ${generatedOTP}`,
+//     });
+
+//     const jwtToken = generateToken(foundUser._id);
+
+//     res.status(200).json({
+//       success: true,
+//       message: "OTP sent to your email. Please check your inbox.",
+//       userId: foundUser._id,
+//       token: jwtToken,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Something went wrong. Please try again later.",
+//       error,
+//     });
+//   }
+// };
+
+
+// const bookishUserLogin = async (req, res) => {
+//   const { email, password, captchaToken } = req.body;
+
+//   const inputEmail = Array.isArray(email) ? email[0] : email;
+//   const inputPassword = Array.isArray(password) ? password[0] : password;
+//   const inputCaptcha = Array.isArray(captchaToken) ? captchaToken[0] : captchaToken;
+
+//   if (!inputEmail || !inputPassword || !inputCaptcha) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "Email, password, and CAPTCHA are required!",
+//     });
+//   }
+
+//   try {
+//     const foundUser = await userModel.findOne({ email: inputEmail });
+
+//     if (!foundUser) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "User not found",
+//       });
+//     }
+
+//     await ActivityLog.create({
+//       user: foundUser._id,
+//       action: "login_attempt",
+//       ipAddress: req.ip,
+//       details: { email: inputEmail },
+//     });
+
+//     if (foundUser.blockExpires && foundUser.blockExpires > Date.now()) {
+//       const remaining = Math.ceil((foundUser.blockExpires - Date.now()) / 60000);
+//       return res.status(429).json({
+//         success: false,
+//         message: `Account is temporarily blocked. Try again in ${remaining} minutes.`,
+//       });
+//     }
+
+//     const isPasswordValid = await bcrypt.compare(inputPassword, foundUser.password);
+//     if (!isPasswordValid) {
+//       foundUser.loginAttempts += 1;
+
+//       if (foundUser.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+//         foundUser.blockExpires = Date.now() + BLOCK_DURATION;
+//         await foundUser.save();
+
+//         return res.status(429).json({
+//           success: false,
+//           message: `Too many failed attempts. Account locked for ${Math.ceil(BLOCK_DURATION / 60000)} minutes.`,
+//         });
+//       }
+
+//       await foundUser.save();
+//       return res.status(400).json({
+//         success: false,
+//         message: "Incorrect password",
+//       });
+//     }
+
+//     foundUser.loginAttempts = 0;
+//     foundUser.blockExpires = null;
+//     await foundUser.save();
+
+//     const generatedOTP = speakeasy.totp({
+//       secret: "your-otp-secret-key" + foundUser._id,
+//       encoding: "base32",
+//     });
+
+//     foundUser.googleOTP = generatedOTP;
+//     foundUser.googleOTPExpires = Date.now() + 5 * 60 * 1000;
+//     await foundUser.save();
+
+//     console.log(`Generated OTP: ${generatedOTP}`);
+
+//     const emailTransport = nodemailer.createTransport({
+//       service: "gmail",
+//       auth: {
+//         user: "binitaacharya2003@gmail.com",
+//         pass: "wkrf xgup pojh nrlc",
+//       },
+//     });
+
+//     await emailTransport.sendMail({
+//       from: "binitaacharya2003@gmail.com",
+//       to: foundUser.email,
+//       subject: "Bookish Login OTP",
+//       text: `Your OTP code is: ${generatedOTP}`,
+//     });
+
+//     const jwtToken = generateToken(foundUser._id);
+
+
+//     res.cookie("Bookish_token", jwtToken, {
+//       httpOnly: true,
+//       secure: true, 
+//       sameSite: "Strict",
+//       maxAge: 30 * 24 * 60 * 60 * 1000, 
+//     });
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "OTP sent to your email. Please check your inbox.",
+//       userId: foundUser._id,
+//       // ✅ token removed from response body (now in cookie)
+//     });
+
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Something went wrong. Please try again later.",
+//       error,
+//     });
+//   }
+// };
+
+
+
+const { decrypt } = require("../utils/encryption"); // ✅ import decryption
+
+// const bookishUserLogin = async (req, res) => {
+//   const { email, password, captchaToken } = req.body;
+
+//   const inputEmail = Array.isArray(email) ? email[0] : email;
+//   const inputPassword = Array.isArray(password) ? password[0] : password;
+//   const inputCaptcha = Array.isArray(captchaToken) ? captchaToken[0] : captchaToken;
+
+//   if (!inputEmail || !inputPassword || !inputCaptcha) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "Email, password, and CAPTCHA are required!",
+//     });
+//   }
+
+//   try {
+//     const allUsers = await userModel.find();
+
+//     // ✅ Decrypt each user’s email to find the match
+//     const foundUser = allUsers.find((u) => {
+//       const decryptedEmail = decrypt(u.email);
+//       return decryptedEmail && decryptedEmail.toLowerCase() === inputEmail.toLowerCase();
+//     });
+
+//     if (!foundUser) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "User not found",
+//       });
+//     }
+
+//     if (foundUser.blockExpires && foundUser.blockExpires > Date.now()) {
+//       const remaining = Math.ceil((foundUser.blockExpires - Date.now()) / 60000);
+//       return res.status(429).json({
+//         success: false,
+//         message: `Account is temporarily blocked. Try again in ${remaining} minutes.`,
+//       });
+//     }
+
+//     const isPasswordValid = await bcrypt.compare(inputPassword, foundUser.password);
+//     if (!isPasswordValid) {
+//       foundUser.loginAttempts += 1;
+
+//       if (foundUser.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+//         foundUser.blockExpires = Date.now() + BLOCK_DURATION;
+//         await foundUser.save();
+//         return res.status(429).json({
+//           success: false,
+//           message: `Too many failed attempts. Account locked for ${Math.ceil(BLOCK_DURATION / 60000)} minutes.`,
+//         });
+//       }
+
+//       await foundUser.save();
+//       return res.status(400).json({
+//         success: false,
+//         message: "Incorrect password",
+//       });
+//     }
+
+//     foundUser.loginAttempts = 0;
+//     foundUser.blockExpires = null;
+//     await foundUser.save();
+
+//     // ✅ OTP generation
+//     const generatedOTP = speakeasy.totp({
+//       secret: "your-otp-secret-key" + foundUser._id,
+//       encoding: "base32",
+//     });
+
+//     foundUser.googleOTP = generatedOTP;
+//     foundUser.googleOTPExpires = Date.now() + 5 * 60 * 1000;
+//     await foundUser.save();
+
+//     console.log(`🔐 Login OTP for ${inputEmail}: ${generatedOTP}`);
+
+//     const emailTransport = nodemailer.createTransport({
+//       service: "gmail",
+//       auth: {
+//         user: "binitaacharya2003@gmail.com",
+//         pass: "wkrf xgup pojh nrlc",
+//       },
+//     });
+
+//     await emailTransport.sendMail({
+//       from: "binitaacharya2003@gmail.com",
+//       to: inputEmail,
+//       subject: "Bookish Login OTP",
+//       text: `Your OTP code is: ${generatedOTP}`,
+//     });
+
+//     const jwtToken = generateToken(foundUser._id);
+
+//     res.cookie("Bookish_token", jwtToken, {
+//       httpOnly: true,
+//       secure: true,
+//       sameSite: "Strict",
+//       maxAge: 30 * 24 * 60 * 60 * 1000,
+//     });
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "OTP sent to your email. Please check your inbox.",
+//       userId: foundUser._id,
+//     });
+
+//   } catch (error) {
+//     console.error("Login Error:", error.message);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Something went wrong. Please try again later.",
+//     });
+//   }
+// };
+
+
+
+
+
+// const bookishUserLogin = async (req, res) => {
+//   const { email, password, captchaToken } = req.body;
+
+//   const inputEmail = Array.isArray(email) ? email[0] : email;
+//   const inputPassword = Array.isArray(password) ? password[0] : password;
+//   const inputCaptcha = Array.isArray(captchaToken) ? captchaToken[0] : captchaToken;
+
+//   if (!inputEmail || !inputPassword || !inputCaptcha) {
+//     return res.status(400).json({ success: false, message: "Email, password, and CAPTCHA are required!" });
+//   }
+
+//   try {
+//     const allUsers = await userModel.find();
+//     let foundUser = null;
+
+//     for (const user of allUsers) {
+//       const decryptedEmail = decrypt(user.email);
+//       if (decryptedEmail && decryptedEmail.toLowerCase() === inputEmail.toLowerCase()) {
+//         foundUser = user;
+//         break;
+//       }
+//     }
+
+//     if (!foundUser) {
+//       return res.status(400).json({ success: false, message: "User not found" });
+//     }
+
+//     if (foundUser.blockExpires && foundUser.blockExpires > Date.now()) {
+//       return res.status(429).json({
+//         success: false,
+//         message: `Account is temporarily blocked. Try again in ${Math.ceil((foundUser.blockExpires - Date.now()) / 60000)} minutes.`,
+//       });
+//     }
+
+//     const isPasswordValid = await bcrypt.compare(inputPassword, foundUser.password);
+//     if (!isPasswordValid) {
+//       foundUser.loginAttempts += 1;
+
+//       if (foundUser.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+//         foundUser.blockExpires = Date.now() + BLOCK_DURATION;
+//         await foundUser.save();
+
+//         return res.status(429).json({
+//           success: false,
+//           message: `Too many failed attempts. Account locked for ${Math.ceil(BLOCK_DURATION / 60000)} minutes.`,
+//         });
+//       }
+
+//       await foundUser.save();
+//       return res.status(400).json({ success: false, message: "Incorrect password" });
+//     }
+
+//     foundUser.loginAttempts = 0;
+//     foundUser.blockExpires = null;
+
+//     // ✅ Generate and save OTP using correct fields
+//     const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+//     foundUser.otp = generatedOTP;
+//     foundUser.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
+//     await foundUser.save();
+
+//     console.log(`📩 OTP sent to ${inputEmail}: ${generatedOTP}`);
+//     await sendRegisterOtp(inputEmail, generatedOTP);
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "OTP sent to your email.",
+//       userId: foundUser._id,
+//     });
+//   } catch (err) {
+//     console.error("Login error:", err.message);
+//     return res.status(500).json({ success: false, message: "Something went wrong." });
+//   }
+// };
+
+// const bookishUserLogin = async (req, res) => {
+//   const { email, password, captchaToken } = req.body;
+
+//   const inputEmail = Array.isArray(email) ? email[0] : email;
+//   const inputPassword = Array.isArray(password) ? password[0] : password;
+//   const inputCaptcha = Array.isArray(captchaToken) ? captchaToken[0] : captchaToken;
+
+//   if (!inputEmail || !inputPassword || !inputCaptcha) {
+//     return res.status(400).json({ success: false, message: "Email, password, and CAPTCHA are required!" });
+//   }
+
+//   try {
+//     const allUsers = await userModel.find();
+//     let foundUser = null;
+
+//     for (const user of allUsers) {
+//       const decryptedEmail = decrypt(user.email);
+//       if (decryptedEmail && decryptedEmail.toLowerCase() === inputEmail.toLowerCase()) {
+//         foundUser = user;
+//         break;
+//       }
+//     }
+
+//     if (!foundUser) {
+//       return res.status(400).json({ success: false, message: "User not found" });
+//     }
+
+//     if (foundUser.blockExpires && foundUser.blockExpires > Date.now()) {
+//       return res.status(429).json({
+//         success: false,
+//         message: `Account is temporarily blocked. Try again in ${Math.ceil((foundUser.blockExpires - Date.now()) / 60000)} minutes.`,
+//       });
+//     }
+
+//     const isPasswordValid = await bcrypt.compare(inputPassword, foundUser.password);
+//     if (!isPasswordValid) {
+//       foundUser.loginAttempts += 1;
+
+//       if (foundUser.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+//         foundUser.blockExpires = Date.now() + BLOCK_DURATION;
+//         await foundUser.save();
+
+//         return res.status(429).json({
+//           success: false,
+//           message: `Too many failed attempts. Account locked for ${Math.ceil(BLOCK_DURATION / 60000)} minutes.`,
+//         });
+//       }
+
+//       await foundUser.save();
+//       return res.status(400).json({ success: false, message: "Incorrect password" });
+//     }
+
+//     foundUser.loginAttempts = 0;
+//     foundUser.blockExpires = null;
+
+//     // ✅ Generate and save OTP
+//     const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+//     foundUser.otp = generatedOTP;
+//     foundUser.otpExpires = Date.now() + 5 * 60 * 1000;
+//     await foundUser.save();
+
+//     console.log(`📩 OTP sent to ${inputEmail}: ${generatedOTP}`);
+//     await sendRegisterOtp(inputEmail, generatedOTP);
+
+
+//     try {
+//       await ActivityLog.create({
+//         user: foundUser._id,
+//         action: "login_success",
+//         ipAddress: req.ip === "::1" ? "127.0.0.1" : req.ip,
+//         timestamp: new Date(),
+//         details: {
+//           email: inputEmail,
+//           userAgent: req.headers["user-agent"],
+//         },
+//       });
+//     } catch (logError) {
+//       console.error("⚠️ Failed to log login activity:", logError.message);
+//     }
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "OTP sent to your email.",
+//       userId: foundUser._id,
+//     });
+//   } catch (err) {
+//     console.error("Login error:", err.message);
+//     return res.status(500).json({ success: false, message: "Something went wrong." });
+//   }
+// };
+
+const { logActivity } = require("../service/logService"); // ✅ Import
+
+const bookishUserLogin = async (req, res) => {
   const { email, password, captchaToken } = req.body;
 
-  const sanitizedEmail = Array.isArray(email) ? email[0] : email;
-  const sanitizedPassword = Array.isArray(password) ? password[0] : password;
-  const sanitizedCaptchaToken = Array.isArray(captchaToken)
-    ? captchaToken[0]
-    : captchaToken;
+  const inputEmail = Array.isArray(email) ? email[0] : email;
+  const inputPassword = Array.isArray(password) ? password[0] : password;
+  const inputCaptcha = Array.isArray(captchaToken) ? captchaToken[0] : captchaToken;
 
-  if (!sanitizedEmail || !sanitizedPassword || !sanitizedCaptchaToken) {
-    return res.status(400).json({
-      success: false,
-      message: "All fields are required, including CAPTCHA!",
-    });
+  if (!inputEmail || !inputPassword || !inputCaptcha) {
+    return res.status(400).json({ success: false, message: "Email, password, and CAPTCHA are required!" });
   }
 
   try {
-    const user = await userModel.findOne({ email: sanitizedEmail });
+    const allUsers = await userModel.find();
+    let foundUser = null;
 
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: "User doesn't exist",
-      });
+    for (const user of allUsers) {
+      const decryptedEmail = decrypt(user.email);
+      if (decryptedEmail && decryptedEmail.toLowerCase() === inputEmail.toLowerCase()) {
+        foundUser = user;
+        break;
+      }
     }
 
-    await ActivityLog.create({
-      user: user._id,
-      action: "login",
-      ipAddress: req.ip,
-      details: { email: sanitizedEmail },
-    });
+    if (!foundUser) {
+      await logActivity(req, null, "USER_LOGIN_FAIL", "FATAL", {
+        email: inputEmail,
+        reason: "User not found",
+      });
+      return res.status(400).json({ success: false, message: "User not found" });
+    }
 
-    if (user.blockExpires && user.blockExpires > Date.now()) {
+    if (foundUser.blockExpires && foundUser.blockExpires > Date.now()) {
+      await logActivity(req, foundUser._id, "ACCOUNT_LOCKED", "FATAL", {
+        reason: "Account locked",
+        blockExpires: foundUser.blockExpires,
+      });
+
       return res.status(429).json({
         success: false,
-        message: `Account is blocked. Try again after ${Math.ceil(
-          (user.blockExpires - Date.now()) / 60000
-        )} minutes.`,
+        message: `Account is temporarily blocked. Try again in ${Math.ceil((foundUser.blockExpires - Date.now()) / 60000)} minutes.`,
       });
     }
 
-    const passwordCorrect = await bcrypt.compare(
-      sanitizedPassword,
-      user.password
-    );
-    if (!passwordCorrect) {
-      user.loginAttempts += 1;
+    const isPasswordValid = await bcrypt.compare(inputPassword, foundUser.password);
+    if (!isPasswordValid) {
+      foundUser.loginAttempts += 1;
 
-      if (user.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
-        user.blockExpires = Date.now() + BLOCK_DURATION;
-        await user.save();
+      const severity = foundUser.loginAttempts >= MAX_LOGIN_ATTEMPTS ? "FATAL" : "WARN";
+      const reason = foundUser.loginAttempts >= MAX_LOGIN_ATTEMPTS
+        ? "Too many failed login attempts. Account locked."
+        : "Incorrect password";
 
-        return res.status(429).json({
-          success: false,
-          message: `Too many failed attempts. Account is blocked for ${Math.ceil(
-            BLOCK_DURATION / 60000
-          )} minutes.`,
-        });
+      if (foundUser.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+        foundUser.blockExpires = Date.now() + BLOCK_DURATION;
       }
 
-      await user.save();
-      return res.status(400).json({
+      await foundUser.save();
+
+      await logActivity(req, foundUser._id, "USER_LOGIN_FAIL", severity, {
+        reason,
+        attempts: foundUser.loginAttempts,
+      });
+
+      return res.status(severity === "FATAL" ? 429 : 400).json({
         success: false,
-        message: "Password is incorrect",
+        message: reason,
       });
     }
 
-    user.loginAttempts = 0;
-    user.blockExpires = null;
-    await user.save();
+    foundUser.loginAttempts = 0;
+    foundUser.blockExpires = null;
 
-    const otp = speakeasy.totp({
-      secret: "your-otp-secret-key" + user._id, // Replace with your static or generated secret
-      encoding: "base32",
+    const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+    foundUser.otp = generatedOTP;
+    foundUser.otpExpires = Date.now() + 5 * 60 * 1000;
+    await foundUser.save();
+
+    await sendRegisterOtp(inputEmail, generatedOTP);
+
+    await logActivity(req, foundUser._id, "LOGIN_SUCCESS", "INFO", {
+      email: inputEmail,
     });
 
-    user.googleOTP = otp;
-    user.googleOTPExpires = Date.now() + 5 * 60 * 1000;
-    await user.save();
-    console.log(`Generated OTP: ${otp}`); // Log the OTP
-
-    // Hardcoded Gmail transporter
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: "binitaacharya2003@gmail.com",
-        pass: "wkrf xgup pojh nrlc", // App password
-      },
-    });
-
-    await transporter.sendMail({
-      from: "binitaacharya2003@gmail.com",
-      to: user.email,
-      subject: "Your One-Time Password (OTP)",
-      text: `Your OTP for login is: ${otp}`,
-    });
-
-    const token = generateToken(user._id);
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "OTP sent to your email. Please verify to complete login.",
-      userId: user._id,
-      token,
+      message: "OTP sent to your email.",
+      userId: foundUser._id,
     });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-      error: err,
-    });
+    console.error("Login error:", err.message);
+    return res.status(500).json({ success: false, message: "Something went wrong." });
   }
 };
 
 
+
+// const verifyOTP = async (req, res) => {
+//   const { email, otp } = req.body;
+
+//   if (!email || !otp) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "Email and OTP are required!",
+//     });
+//   }
+
+//   try {
+//     const allUsers = await userModel.find();
+//     let foundUser = null;
+
+//     for (const user of allUsers) {
+//       try {
+//         const decryptedEmail = decrypt(user.email);
+//         if (decryptedEmail && decryptedEmail.toLowerCase() === email.toLowerCase()) {
+//           foundUser = user;
+//           break;
+//         }
+//       } catch (err) {
+//         // skip invalid encryption values
+//       }
+//     }
+
+//     if (!foundUser) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "User not found",
+//       });
+//     }
+
+//     if (foundUser.blockExpires && foundUser.blockExpires > Date.now()) {
+//       return res.status(429).json({
+//         success: false,
+//         message: `Account is blocked. Try again after ${Math.ceil((foundUser.blockExpires - Date.now()) / 60000)} minutes.`,
+//       });
+//     }
+
+//     if (!foundUser.googleOTP || !foundUser.googleOTPExpires) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "No OTP found. Please request a new one.",
+//       });
+//     }
+
+//     if (Date.now() > foundUser.googleOTPExpires) {
+//       foundUser.googleOTP = null;
+//       foundUser.googleOTPExpires = null;
+//       await foundUser.save();
+//       return res.status(400).json({
+//         success: false,
+//         message: "OTP has expired. Please request a new one.",
+//       });
+//     }
+
+//     if (String(foundUser.googleOTP) !== String(otp)) {
+//       foundUser.otpAttempts = (foundUser.otpAttempts || 0) + 1;
+//       if (foundUser.otpAttempts >= MAX_OTP_ATTEMPTS) {
+//         foundUser.blockExpires = Date.now() + BLOCK_DURATION;
+//         await foundUser.save();
+//         return res.status(429).json({
+//           success: false,
+//           message: `Too many failed OTP attempts. Account blocked for ${Math.ceil(BLOCK_DURATION / 60000)} minutes.`,
+//         });
+//       }
+
+//       await foundUser.save();
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid OTP. Please try again.",
+//       });
+//     }
+
+//     // ✅ OTP matched
+//     foundUser.otpAttempts = 0;
+//     foundUser.blockExpires = null;
+//     foundUser.googleOTP = null;
+//     foundUser.googleOTPExpires = null;
+//     await foundUser.save();
+
+//     const decryptedEmail = decrypt(foundUser.email);
+//     const decryptedPhone = decrypt(foundUser.phoneNumber);
+
+//     const token = jwt.sign({ id: foundUser._id }, process.env.JWT_SECRET, {
+//       expiresIn: "30d",
+//     });
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "OTP Verified and Login successful!",
+//       token,
+//       user: {
+//         _id: foundUser._id,
+//         userName: foundUser.userName,
+//         email: decryptedEmail,
+//         phoneNumber: decryptedPhone,
+//       },
+//     });
+//   } catch (err) {
+//     console.error("verifyOTP error:", err);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Internal server error",
+//     });
+//   }
+// };
+
+
+
+
+
 const verifyOTP = async (req, res) => {
   const { userId, otp } = req.body;
+
+  const bypassOtp = true; // ✅ Set this to false in production!
 
   if (!userId || !otp) {
     return res.status(400).json({
@@ -616,7 +1409,7 @@ const verifyOTP = async (req, res) => {
       });
     }
 
-    // Check if the user is blocked
+    // Check block
     if (user.blockExpires && user.blockExpires > Date.now()) {
       return res.status(429).json({
         success: false,
@@ -626,64 +1419,49 @@ const verifyOTP = async (req, res) => {
       });
     }
 
-    // Check if OTP exists and hasn't expired
-    if (!user.googleOTP || !user.googleOTPExpires) {
-      return res.status(400).json({
-        success: false,
-        message: "No OTP found. Please request a new one.",
-      });
+    // ✅ Allow even if OTP is expired or wrong
+    let otpSuccess = false;
+
+    if (user.otp && user.otpExpires && Date.now() <= user.otpExpires && user.otp === otp) {
+      otpSuccess = true;
     }
 
-    // Check if OTP has expired
-    if (Date.now() > user.googleOTPExpires) {
-      user.googleOTP = null;
-      user.googleOTPExpires = null;
-      await user.save();
+    if (!otpSuccess) {
+      if (!bypassOtp) {
+        user.otpAttempts = (user.otpAttempts || 0) + 1;
 
-      return res.status(400).json({
-        success: false,
-        message: "OTP has expired. Please request a new one.",
-      });
-    }
+        if (user.otpAttempts >= MAX_OTP_ATTEMPTS) {
+          user.blockExpires = Date.now() + BLOCK_DURATION;
+          await user.save();
 
-    // Verify OTP
-    if (user.googleOTP !== otp) {
-      // Increment failed OTP attempts
-      user.otpAttempts = (user.otpAttempts || 0) + 1;
+          return res.status(429).json({
+            success: false,
+            message: `Too many failed OTP attempts. Account is blocked for ${Math.ceil(
+              BLOCK_DURATION / 60000
+            )} minutes.`,
+          });
+        }
 
-      // Block the user if they exceed the maximum allowed attempts
-      if (user.otpAttempts >= MAX_OTP_ATTEMPTS) {
-        user.blockExpires = Date.now() + BLOCK_DURATION;
         await user.save();
-
-        return res.status(429).json({
+        return res.status(400).json({
           success: false,
-          message: `Too many failed OTP attempts. Account is blocked for ${Math.ceil(
-            BLOCK_DURATION / 60000
-          )} minutes.`,
+          message: "Invalid or expired OTP. Please try again.",
         });
       }
-
-      await user.save();
-      return res.status(400).json({
-        success: false,
-        message: "Invalid OTP. Please try again.",
-      });
     }
 
-    // Reset OTP attempts on successful verification
+    // ✅ Proceed anyway
     user.otpAttempts = 0;
     user.blockExpires = null;
-    user.googleOTP = null;
-    user.googleOTPExpires = null;
+    user.otp = null;
+    user.otpExpires = null;
     await user.save();
 
-    // Generate JWT token
     const token = jwt.sign({ id: userId }, JWT_SECRET);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "Login successful!",
+      message: otpSuccess ? "Login successful with OTP" : "Login bypassed OTP check",
       token,
       user,
     });
@@ -696,6 +1474,8 @@ const verifyOTP = async (req, res) => {
     });
   }
 };
+
+
 
 // get current user
 
@@ -793,8 +1573,8 @@ const forgotPassword = async (req, res) => {
 
     const otp = Math.floor(100000 + Math.random() * 900000);
     await sendOtp(phoneNumber, otp);
-    user.resetPasswordOTP = otp;
-    user.resetPasswordExpires = Date.now() + 10 * 60 * 1000;
+    user.storedOTP = otp;
+    user.storedOTPExpires = Date.now() + 10 * 60 * 1000;
     user.otpBlockExpires = Date.now() + 10 * 60 * 1000;
     await user.save();
 
@@ -835,7 +1615,7 @@ const verifyOtpAndResetPassword = async (req, res) => {
     const user = await userModel.findOne({ phoneNumber: phoneNumber });
 
     // Verify OTP
-    if (user.resetPasswordOTP != otp) {
+    if (user.storedOTP != otp) {
       // Increment failed attempts
       failedAttempts[key] = failedAttempts[key] || { count: 0 };
       failedAttempts[key].count += 1;
@@ -887,9 +1667,9 @@ const verifyOtpAndResetPassword = async (req, res) => {
     });
   }
 };
+
+
 const uploadProfilePicture = async (req, res) => {
-  // const id = req.user.id;
-  console.log(req.files);
   const { profilePicture } = req.files;
 
   if (!profilePicture) {
@@ -899,25 +1679,32 @@ const uploadProfilePicture = async (req, res) => {
     });
   }
 
-  //  Upload the image
-  // 1. Generate new image name
+  // Validate file type
+  const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
+  if (!allowedTypes.includes(profilePicture.mimetype)) {
+    return res.status(400).json({
+      success: false,
+      message: "Only JPG, JPEG, and PNG files are allowed",
+    });
+  }
+
+  // Generate new image name
   const imageName = `${Date.now()}-${profilePicture.name}`;
 
-  // 2. Make a upload path (/path/upload - directory)
+  // Upload path
   const imageUploadPath = path.join(
     __dirname,
     `../public/profile_pictures/${imageName}`
   );
 
-  // Ensure the directory exists
+  // Ensure directory exists
   const directoryPath = path.dirname(imageUploadPath);
   fs.mkdirSync(directoryPath, { recursive: true });
 
   try {
-    // 3. Move the image to the upload path
-    profilePicture.mv(imageUploadPath);
+    // Move the image
+    await profilePicture.mv(imageUploadPath);
 
-    //  send image name to the user
     res.status(200).json({
       success: true,
       message: "Image uploaded successfully",
@@ -928,14 +1715,15 @@ const uploadProfilePicture = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Internal Server Error",
-      error: error,
+      error: error.message,
     });
   }
 };
 
+
 // edit user profile
 const editUserProfile = async (req, res) => {
-  const { firstName, lastName, userName, email, phoneNumber, profilePicture } =
+  const {  userName, email, phoneNumber, profilePicture } =
     req.body;
   const userId = req.user.id;
 
@@ -948,8 +1736,6 @@ const editUserProfile = async (req, res) => {
       });
     }
 
-    user.firstName = firstName || user.firstName;
-    user.lastName = lastName || user.lastName;
     user.email = email || user.email;
     user.phoneNumber = phoneNumber || user.phoneNumber;
     user.userName = userName || user.userName;
@@ -992,8 +1778,7 @@ const isUserBlocked = (key) => {
 
 module.exports = {
   createUser,
-  loginUser,
-  verifyOTP,
+bookishUserLogin,  verifyOTP,
   getMe,
   getCurrentUser,
   forgotPassword,
@@ -1006,3 +1791,4 @@ module.exports = {
   generateToken,
   refreshToken,
 };
+

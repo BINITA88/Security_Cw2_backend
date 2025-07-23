@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const activityController = require("../controllers/activityController");
-const { authGuard, isAdmin, adminGuard } = require("../middleware/authGuard");
+const { bookishProtectAuth, isAdmin, adminGuard } = require("../middleware/protect");
 
 // Get all user activities (Admin only)
 router.get("/activities", activityController.getAllUserActivities);

@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const productController = require("../controllers/productController");
-const { authGuard, adminGuard } = require("../middleware/authGuard");
+const { bookishProtectAuth, adminGuard } = require("../middleware/protect");
 const { body, query,validationResult } = require("express-validator");
 
 router.post(
@@ -45,8 +45,8 @@ router.post(
   },
   productController.createProduct
 );
-router.get("/get_all_products", authGuard, productController.getAllProducts);
-router.get("/get_one_product/:id", productController.getOneProduct, authGuard);
+router.get("/get_all_products", bookishProtectAuth, productController.getAllProducts);
+router.get("/get_one_product/:id", productController.getOneProduct, bookishProtectAuth);
 router.put("/update_product/:id", productController.updateProduct, adminGuard);
 router.delete("/delete/:id", productController.deleteProduct, adminGuard);
 router.get("/get_paginated_products", productController.getProductsPagination);
@@ -63,6 +63,10 @@ router.get(
       .isLength({ max: 100 })
       .withMessage("Search query must be less than 100 characters"),
   ],
+
+
+
+  
   (req, res, next) => {
     // Check for validation errors
     const errors = validationResult(req);

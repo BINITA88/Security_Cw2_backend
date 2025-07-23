@@ -1,6 +1,6 @@
 // Importing the packages (express)
 const express = require("express");
-const connectDatabase = require("./database/database");
+const connectDatabase = require("./data/database");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const accessFromData = require("express-fileupload");
@@ -12,20 +12,77 @@ const csrf = require("csurf");
 const cookieParser = require("cookie-parser");
 
 
-// Creating an express app
+
+
 const app = express();
 
 app.use(cookieParser());
 
-// CSRF protection middleware
-const csrfProtection = csrf({ cookie: true }); // Initialize csrfProtection
+
+const csrfProtection = csrf({ cookie: true }); 
 
 // Express Json Config
 app.use(express.json());
 
-app.use(express.static("./public"));
+// app.use(express.static("./public"));
 
-// Helmet Configuration
+const ProtectImage = require("./middleware/imageHotlinkProtect"); 
+app.use(
+  "/products",
+  ProtectImage,
+  express.static(path.join(__dirname, "public/products"))
+);
+
+// ✅ Helmet Configuration
+// --------------------
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "https://trusted-cdn.com",
+          "https://cdnjs.cloudflare.com",
+          "https://apis.google.com",
+        ],
+        styleSrc: [
+          "'self'",
+          "https://fonts.googleapis.com",
+          "https://trusted-cdn.com",
+        ],
+        fontSrc: [
+          "'self'",
+          "https://fonts.gstatic.com",
+        ],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "https://trusted-cdn.com",
+        ],
+        connectSrc: [
+          "'self'",
+          "https://api.example.com",
+        ],
+        frameSrc: [
+          "'self'",
+          "https://trusted-iframe.com",
+        ],
+        objectSrc: ["'none'"], 
+        upgradeInsecureRequests: [], 
+      },
+    },
+  })
+);
+
+
+app.use(helmet.dnsPrefetchControl());
+app.use(helmet.frameguard({ action: "deny" }));
+app.use(helmet.hidePoweredBy());
+app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true }));
+app.use(helmet.noSniff());
+app.use(helmet.permittedCrossDomainPolicies());
+app.use(helmet.referrerPolicy({ policy: "no-referrer" }));
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -48,47 +105,37 @@ const { default: Stripe } = require("stripe");
 app.use(hpp());
 app.use(express.urlencoded({ extended: true }));
 
-// const csrf = require("csurf");
-// const csrfProtection = csrf({ cookie: true });
-// app.use(csrfProtection);
 
-//  cors configuration
 const corsOptions = {
   origin: true,
   credentials: true,
   optionSuccessStatus: 200,
+  
 };
 app.use(cors(corsOptions));
 
-// dotenv Configuration
 dotenv.config();
 
-// Connecting to database
 connectDatabase();
-
-// Defining the port
 const PORT = 5000
 
-// Making a test endpoint
-// Endpoints : POST, GET, PUT , DELETE
-app.get("/test", (req, res) => {
-  res.send("Test API is Working!....");
-});
 const options = {
  key: fs.readFileSync(path.join(__dirname, '../certs/localhost-key.pem')),
   cert: fs.readFileSync(path.join(__dirname, '../certs/localhost.pem')),
 
 };
 
+
+
+
 app.use("/api/user", require("./routes/userRoutes"));
 app.use("/api/product", require("./routes/productRoutes"));
 app.use("/api/cart", require("./routes/cartRoutes"));
-app.use("/api/review", require("./routes/review&ratingRoutes"));
 app.use("/api/order", require("./routes/orderRoutes"));
 app.use("/api/khalti", require("./routes/paymentRoutes"));
 app.use("/api/admin", require("./routes/activityRoute"));
-app.use("/api/stripe",  require("./routes/stripe"));
-app.get("/api/csrf-token", csrfProtection, (req, res) => {
+app.use("/api/stripe",  require("./routes/stripeRoutes"));
+app.get("/api/Bookish-Csrf", csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
 // asad

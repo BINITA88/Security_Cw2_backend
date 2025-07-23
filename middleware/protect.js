@@ -179,18 +179,15 @@
 //   isAdmin,
 // };
 
-// sds
+// sds3
 
 const jwt = require("jsonwebtoken");
 const axios = require("axios");
 const rateLimit = require("express-rate-limit");
 const userModel = require("../models/userModel");
 
-
-
 const JWT_SECRET = process.env.JWT_SECRET;
-
-const authGuard = async (req, res, next) => {
+const bookishProtectAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
@@ -199,7 +196,6 @@ const authGuard = async (req, res, next) => {
       message: "Authorization header missing",
     });
   }
-
   const token = authHeader.split(" ")[1];
 
   if (!token) {
@@ -208,11 +204,9 @@ const authGuard = async (req, res, next) => {
       message: "Token not found",
     });
   }
-
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // 🔥 THIS is where we use your schema
     const user = await userModel.findById(decoded.id).select("-password");
 
     if (!user) {
@@ -222,20 +216,32 @@ const authGuard = async (req, res, next) => {
       });
     }
 
-    // ✅ Set req.user for later use
     req.user = user;
 
     next();
   } catch (error) {
-    console.error("authGuard error:", error);
+    console.error("bookishauthGuard error occured:", error);
     res.status(401).json({
       success: false,
-      message: "Not authorized",
+      message: "You are not authorized",
     });
   }
 };
 
-// ================== ADMIN GUARD ==================
+
+const bookishAuthorizeRoles = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access Denied: Insufficient privileges",
+      });
+    }
+    next();
+  };
+};
+
+
 const adminGuard = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
@@ -271,7 +277,6 @@ const adminGuard = (req, res, next) => {
   }
 };
 
-// ================== RATE LIMIT ==================
 const forgotPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 3,
@@ -279,12 +284,11 @@ const forgotPasswordLimiter = rateLimit({
     res.json({
       success: false,
       message:
-        "Too many password reset attempts from this IP, please try again after 15 minutes",
+        "Too many password reset attempts from this IP, please try again after 10 minutes",
     });
   },
 });
 
-// ================== VALIDATOR ==================
 const validateRequest = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.body);
   if (error) {
@@ -296,7 +300,6 @@ const validateRequest = (schema) => (req, res, next) => {
   next();
 };
 
-// ================== reCAPTCHA GUARD ==================
 const verifyRecaptcha = async (req, res, next) => {
   const recaptchaResponse = req.body["recaptchaToken"];
 
@@ -338,7 +341,6 @@ const verifyRecaptcha = async (req, res, next) => {
   }
 };
 
-// ================== isAdmin CHECK ==================
 const isAdmin = (req, res, next) => {
   if (req.user && req.user.isAdmin) {
     next();
@@ -351,8 +353,9 @@ const isAdmin = (req, res, next) => {
 };
 
 module.exports = {
-  authGuard,
+  bookishProtectAuth,
   adminGuard,
+  bookishAuthorizeRoles,
   forgotPasswordLimiter,
   validateRequest,
   verifyRecaptcha,

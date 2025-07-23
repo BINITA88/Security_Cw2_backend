@@ -1,14 +1,92 @@
+// const mongoose = require("mongoose");
+
+// const userSchema = new mongoose.Schema({
+  
+//   email: {
+//     type: String,
+//     required: true,
+//     unique: true,
+//   },
+//   phoneNumber: {
+//     type: String,
+//   },
+//   userName: {
+//     type: String,
+//     required: true,
+//     unique: true,
+//   },
+//   password: {
+//     type: String,
+//     required: true,
+//   },
+//     role: {
+//     type: String,
+//     enum: ['user', 'admin'],
+//     default: 'user',
+//   },
+  
+//   isAdmin: {
+//     type: Boolean,
+//     default: false,
+//   },
+//   resetPasswordOTP: {
+//     type: String,
+//     default: null,
+//   },
+//   resetPasswordExpires: {
+//     type: Date,
+//     default: null,
+//   },
+//   profilePicture: {
+//     type: String,
+//   },
+//   fromGoogle: {
+//     type: Boolean,
+//     default: false,
+//   },
+//   loginAttempts: {
+//     type: Number,
+//     default: 0,
+//   },
+//   otpAttempts: {
+//     type: Number,
+//     default: 0,
+//   },
+//   blockExpires: {
+//     type: Date,
+//     default: null,
+//   },
+//   otpBlockExpires: {
+//     type: Date,
+//     default: null,
+//   },
+//   isVerified: {
+//     type: Boolean,
+//     default: false,
+//   },
+//   googleOTP: {
+//     type: String,
+//     default: null,
+//   },
+//   googleOTPExpires: {
+//     type: Date,
+//     default: null,
+//   },
+// });
+
+// const User = mongoose.model("users", userSchema);
+
+// module.exports = User;
+
+
+
+
+
+
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  firstName: {
-    type: String,
-    required: true,
-  },
-  lastName: {
-    type: String,
-    required: true,
-  },
+  
   email: {
     type: String,
     required: true,
@@ -26,25 +104,31 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+    role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user',
+  },
+  
   isAdmin: {
     type: Boolean,
     default: false,
   },
-  resetPasswordOTP: {
+  storedOTP: {
     type: String,
     default: null,
   },
-  resetPasswordExpires: {
+  storedOTPExpires: {
     type: Date,
     default: null,
   },
   profilePicture: {
     type: String,
   },
-  fromGoogle: {
-    type: Boolean,
-    default: false,
-  },
+  // fromGoogle: {
+  //   type: Boolean,
+  //   default: false,
+  // },
   loginAttempts: {
     type: Number,
     default: 0,
@@ -65,14 +149,14 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  googleOTP: {
-    type: String,
-    default: null,
-  },
-  googleOTPExpires: {
-    type: Date,
-    default: null,
-  },
+  // googleOTP: {
+  //   type: String,
+  //   default: null,
+  // },
+  // googleOTPExpires: {
+  //   type: Date,
+  //   default: null,
+  // },
 });
 
 const User = mongoose.model("users", userSchema);

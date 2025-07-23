@@ -2,11 +2,116 @@ const path = require("path");
 const productModel = require("../models/productModel");
 const fs = require("fs");
 
+// const createProduct = async (req, res) => {
+//   console.log(req.body);
+//   console.log(req.files);
+
+//   // Destructuring the body
+//   const {
+//     productName,
+//     productCategory,
+//     productDescription,
+//     productPrice,
+//     productQuantity,
+//   } = req.body;
+//   // Sanitize input to handle duplicate parameters
+//   const sanitizedProductName = Array.isArray(productName)
+//     ? productName[0]
+//     : productName;
+//   const sanitizedProductCategory = Array.isArray(productCategory)
+//     ? productCategory[0]
+//     : productCategory;
+//   const sanitizedProductDescription = Array.isArray(productDescription)
+//     ? productDescription[0]
+//     : productDescription;
+//   const sanitizedProductPrice = Array.isArray(productPrice)
+//     ? parseFloat(productPrice[0])
+//     : parseFloat(productPrice);
+//   const sanitizedProductQuantity = Array.isArray(productQuantity)
+//     ? parseInt(productQuantity[0])
+//     : parseInt(productQuantity);
+
+//   // Validating the data
+//   if (
+//     !sanitizedProductName ||
+//     !sanitizedProductCategory ||
+//     !sanitizedProductDescription ||
+//     isNaN(sanitizedProductPrice) ||
+//     isNaN(sanitizedProductQuantity)
+//   ) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "Please enter all fields!",
+//     });
+//   }
+
+//   // Validate that price and quantity are not negative
+//   if (sanitizedProductPrice < 0 || sanitizedProductQuantity < 0) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "Price and quantity cannot be negative!",
+//     });
+//   }
+
+//   // Validating the image
+//   if (!req.files || !req.files.productImage) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "Please upload an image!",
+//     });
+//   }
+
+//   const { productImage } = req.files;
+
+//   // Upload the image
+//   // 1. Generate new image name
+//   const imageName = `${Date.now()}-${productImage.name}`;
+
+//   // 2. Make an upload path (/path/upload - directory)
+//   const imageUploadPath = path.join(
+//     __dirname,
+//     `../public/products/${imageName}`
+//   );
+
+//   // 3. Move to that directory (await, try catch)
+//   try {
+//     await productImage.mv(imageUploadPath);
+
+//     // save the product to the database
+//     const newProduct = new productModel({
+//       productName: productName,
+//       productCategory: productCategory,
+//       productDescription: productDescription,
+//       productPrice: productPrice,
+//       productQuantity: productQuantity,
+//       productImage: imageName,
+//     });
+
+//     const product = await newProduct.save();
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Product created successfully",
+//       data: product,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Internal server error",
+//       error: "error",
+//     });
+//   }
+// };
+// Fetch all products
+
+const sharp = require("sharp");
+
+
 const createProduct = async (req, res) => {
   console.log(req.body);
   console.log(req.files);
 
-  // Destructuring the body
   const {
     productName,
     productCategory,
@@ -14,96 +119,82 @@ const createProduct = async (req, res) => {
     productPrice,
     productQuantity,
   } = req.body;
-  // Sanitize input to handle duplicate parameters
-  const sanitizedProductName = Array.isArray(productName)
-    ? productName[0]
-    : productName;
-  const sanitizedProductCategory = Array.isArray(productCategory)
-    ? productCategory[0]
-    : productCategory;
-  const sanitizedProductDescription = Array.isArray(productDescription)
-    ? productDescription[0]
-    : productDescription;
-  const sanitizedProductPrice = Array.isArray(productPrice)
-    ? parseFloat(productPrice[0])
-    : parseFloat(productPrice);
-  const sanitizedProductQuantity = Array.isArray(productQuantity)
-    ? parseInt(productQuantity[0])
-    : parseInt(productQuantity);
 
-  // Validating the data
+  // Sanitize
+  const sanitizedProductName = Array.isArray(productName) ? productName[0] : productName;
+  const sanitizedProductCategory = Array.isArray(productCategory) ? productCategory[0] : productCategory;
+  const sanitizedProductDescription = Array.isArray(productDescription) ? productDescription[0] : productDescription;
+  const sanitizedProductPrice = Array.isArray(productPrice) ? parseFloat(productPrice[0]) : parseFloat(productPrice);
+  const sanitizedProductQuantity = Array.isArray(productQuantity) ? parseInt(productQuantity[0]) : parseInt(productQuantity);
+
   if (
-    !sanitizedProductName ||
-    !sanitizedProductCategory ||
-    !sanitizedProductDescription ||
-    isNaN(sanitizedProductPrice) ||
-    isNaN(sanitizedProductQuantity)
+    !sanitizedProductName || !sanitizedProductCategory || !sanitizedProductDescription ||
+    isNaN(sanitizedProductPrice) || isNaN(sanitizedProductQuantity)
   ) {
-    return res.status(400).json({
-      success: false,
-      message: "Please enter all fields!",
-    });
+    return res.status(400).json({ success: false, message: "Please enter all fields!" });
   }
 
-  // Validate that price and quantity are not negative
   if (sanitizedProductPrice < 0 || sanitizedProductQuantity < 0) {
-    return res.status(400).json({
-      success: false,
-      message: "Price and quantity cannot be negative!",
-    });
+    return res.status(400).json({ success: false, message: "Price and quantity cannot be negative!" });
   }
 
-  // Validating the image
   if (!req.files || !req.files.productImage) {
-    return res.status(400).json({
-      success: false,
-      message: "Please upload an image!",
-    });
+    return res.status(400).json({ success: false, message: "Please upload an image!" });
   }
 
   const { productImage } = req.files;
-
-  // Upload the image
-  // 1. Generate new image name
   const imageName = `${Date.now()}-${productImage.name}`;
 
-  // 2. Make an upload path (/path/upload - directory)
-  const imageUploadPath = path.join(
-    __dirname,
-    `../public/products/${imageName}`
-  );
-
-  // 3. Move to that directory (await, try catch)
+  const originalPath = path.join(__dirname, "../public/BookishProductTemp", imageName);
+  const watermarkedName = `watermarked-${imageName}`;
+  const publicPath = path.join(__dirname, "../public/products", watermarkedName);
   try {
-    await productImage.mv(imageUploadPath);
+    const tempDir = path.join(__dirname, "../public/BookishProductTemp");
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    await productImage.mv(originalPath);
 
-    // save the product to the database
+    const watermarkSvg = `<svg width="500" height="100">
+      <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
+        font-size="28" fill="white" opacity="0.3">Bookish</text>
+    </svg>`;
+    const watermarkBuffer = Buffer.from(watermarkSvg);
+    const originalImageBuffer = fs.readFileSync(originalPath);
+
+    // Apply watermark using sharp
+    await sharp(originalImageBuffer)
+      .withMetadata()
+      .resize({ width: 800, fit: "inside" })
+      .composite([{ input: watermarkBuffer, gravity: "center" }])
+      .toFile(publicPath);
+
+    // Save only the watermarked file name in DB
     const newProduct = new productModel({
-      productName: productName,
-      productCategory: productCategory,
-      productDescription: productDescription,
-      productPrice: productPrice,
-      productQuantity: productQuantity,
-      productImage: imageName,
+      productName: sanitizedProductName,
+      productCategory: sanitizedProductCategory,
+      productDescription: sanitizedProductDescription,
+      productPrice: sanitizedProductPrice,
+      productQuantity: sanitizedProductQuantity,
+      productImage: watermarkedName,
     });
 
-    const product = await newProduct.save();
+    const savedProduct = await newProduct.save();
 
     res.status(201).json({
       success: true,
-      message: "Product created successfully",
-      data: product,
+      message: "Product created with watermark",
+      data: savedProduct,
     });
+
   } catch (error) {
-    console.log(error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: "error",
-    });
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
-// Fetch all products
+
+
+
 const getAllProducts = async (req, res) => {
   try {
     const allProducts = await productModel.find({});
@@ -290,11 +381,72 @@ const getProductCount = async (req, res) => {
   }
 };
 
-// Search Products
+// // Search Products
+// const searchProducts = async (req, res) => {
+//   try {
+//     // Step 1: Get the search query from the request
+//     const searchQuery = req.query.q;
+
+//     // Step 2: Validate and sanitize the input
+//     if (!searchQuery || typeof searchQuery !== "string") {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Search query is required and must be a string.",
+//       });
+//     }
+
+//     // Sanitize the input to remove special characters
+//     const sanitizedQuery = searchQuery.replace(/[^\w\s]/gi, "");
+
+//     if (!sanitizedQuery) {
+//       return res.status(400).json({
+//         success: false,
+//         message:
+//           "Invalid search input. Only alphanumeric characters and spaces are allowed.",
+//       });
+//     }
+
+//     // Step 3: Limit the input length to prevent abuse
+//     if (sanitizedQuery.length > 100) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Search query is too long. Maximum length is 100 characters.",
+//       });
+//     }
+
+//     // Step 4: Perform the search using a parameterized query
+//     const products = await productModel.find({
+//       productName: { $regex: sanitizedQuery, $options: "i" }, // Case-insensitive search
+//     });
+
+//     // Step 5: Log the search query for monitoring
+//     console.log(`Search query: ${sanitizedQuery}`);
+
+//     // Step 6: Return the results
+//     res.status(200).json({
+//       success: true,
+//       message: "Products fetched successfully",
+//       products: products,
+//     });
+//   } catch (error) {
+//     console.error("Error in searchProducts:", error);
+
+//     // Step 7: Handle errors gracefully
+//     res.status(500).json({
+//       success: false,
+//       message: "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
+
 const searchProducts = async (req, res) => {
   try {
-    // Step 1: Get the search query from the request
-    const searchQuery = req.query.q;
+    // Step 1: Handle possible HTTP Parameter Pollution (HPP)
+    let searchQuery = req.query.q;
+    if (Array.isArray(searchQuery)) {
+      searchQuery = searchQuery[0]; // Use only the first value
+    }
 
     // Step 2: Validate and sanitize the input
     if (!searchQuery || typeof searchQuery !== "string") {
@@ -304,7 +456,6 @@ const searchProducts = async (req, res) => {
       });
     }
 
-    // Sanitize the input to remove special characters
     const sanitizedQuery = searchQuery.replace(/[^\w\s]/gi, "");
 
     if (!sanitizedQuery) {
@@ -315,7 +466,7 @@ const searchProducts = async (req, res) => {
       });
     }
 
-    // Step 3: Limit the input length to prevent abuse
+    // Step 3: Limit input length to prevent abuse
     if (sanitizedQuery.length > 100) {
       return res.status(400).json({
         success: false,
@@ -323,9 +474,9 @@ const searchProducts = async (req, res) => {
       });
     }
 
-    // Step 4: Perform the search using a parameterized query
+    // Step 4: Perform the search (case-insensitive)
     const products = await productModel.find({
-      productName: { $regex: sanitizedQuery, $options: "i" }, // Case-insensitive search
+      productName: { $regex: sanitizedQuery, $options: "i" },
     });
 
     // Step 5: Log the search query for monitoring
@@ -334,13 +485,13 @@ const searchProducts = async (req, res) => {
     // Step 6: Return the results
     res.status(200).json({
       success: true,
-      message: "Products fetched successfully",
-      products: products,
+      message: "Book fetched successfully",
+      products,
     });
   } catch (error) {
     console.error("Error in searchProducts:", error);
 
-    // Step 7: Handle errors gracefully
+    // Step 7: Graceful error response
     res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -348,6 +499,7 @@ const searchProducts = async (req, res) => {
     });
   }
 };
+
 
 // Get Recommended Products
 const getRecommendedProducts = async (req, res) => {

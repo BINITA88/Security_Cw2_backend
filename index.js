@@ -124,8 +124,9 @@ const options = {
 
 };
 
-
-
+// sd
+const khaltiWebhook = require("./routes/khaltiWebhook");
+app.use("/api/payment", khaltiWebhook);
 
 app.use("/api/user", require("./routes/userRoutes"));
 app.use("/api/product", require("./routes/productRoutes"));

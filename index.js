@@ -124,7 +124,6 @@ const options = {
 
 };
 
-// a
 const khaltiWebhook = require("./routes/khaltiWebhook");
 app.use("/api/payment", khaltiWebhook);
 

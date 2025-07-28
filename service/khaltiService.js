@@ -53,8 +53,6 @@
 // module.exports = { verifyKhaltiPayment, initializeKhaltiPayment };
 
 
-
-
 const axios = require("axios");
 
 // Function to verify Khalti Payment
@@ -64,6 +62,10 @@ async function verifyKhaltiPayment(pidx) {
 
   if (!baseURL || !secretKey) {
     throw new Error("Missing KHALTI_BASE_URL or KHALTI_SECRET_KEY in .env");
+  }
+
+  if (!pidx || typeof pidx !== "string") {
+    throw new Error("Invalid or missing pidx for payment verification");
   }
 
   const headersList = {
@@ -84,7 +86,7 @@ async function verifyKhaltiPayment(pidx) {
     const response = await axios.request(reqOptions);
     return response.data;
   } catch (error) {
-    console.error("Error verifying Khalti payment:", error);
+    console.error("Error verifying Khalti payment:", error?.response?.data || error.message);
     throw error;
   }
 }
@@ -96,6 +98,10 @@ async function initializeKhaltiPayment(details) {
 
   if (!baseURL || !secretKey) {
     throw new Error("Missing KHALTI_BASE_URL or KHALTI_SECRET_KEY in .env");
+  }
+
+  if (!details || typeof details !== "object") {
+    throw new Error("Invalid payment details object");
   }
 
   const headersList = {
@@ -116,7 +122,7 @@ async function initializeKhaltiPayment(details) {
     const response = await axios.request(reqOptions);
     return response.data;
   } catch (error) {
-    console.error("Error initializing Khalti payment:", error);
+    console.error("Error initializing Khalti payment:", error?.response?.data || error.message);
     throw error;
   }
 }

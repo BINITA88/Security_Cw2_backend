@@ -197,6 +197,171 @@ const { encrypt } = require("../utils/encryption");
 
 
 // ✅ Register User (Plain Text)
+// const createUser = async (req, res) => {
+//   const { userName, email, phoneNumber, password } = req.body;
+
+//   if (!userName || !email || !phoneNumber || !password) {
+//     return res.status(400).json({ success: false, message: "Please enter all details!" });
+//   }
+
+//   const passwordRegex =
+//     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
+
+//   if (!passwordRegex.test(password)) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "Password must contain uppercase, lowercase, number, special character and be 6+ characters long",
+//     });
+//   }
+
+//   try {
+//     const normalizedEmail = email.toLowerCase();
+
+//     const existingUser = await userModel.findOne({ email: normalizedEmail });
+//     if (existingUser) {
+//       return res.status(400).json({ success: false, message: "User already exists!" });
+//     }
+
+//     const otp = Math.floor(100000 + Math.random() * 900000);
+//     const otpExpires = Date.now() + 10 * 60 * 1000;
+
+//     console.log(`📩 OTP for ${normalizedEmail}: ${otp}`);
+
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     const newUser = new userModel({
+//       userName,
+//       email: normalizedEmail,
+//       phoneNumber,
+//       password: hashedPassword,
+//       storedOTP: otp,
+//       storedOTPExpires: otpExpires,
+//       isVerified: false,
+//     });
+
+//     await newUser.save();
+//     await sendRegisterOtp(normalizedEmail, otp);
+
+//     // ✅ Log activity after user creation
+//     try {
+//       const ActivityLog = require("../models/activityLogModel"); // if not already imported
+//       await ActivityLog.create({
+//         user: newUser._id,
+//         action: "register_success",
+//         ipAddress: req.ip === "::1" ? "127.0.0.1" : req.ip,
+//         timestamp: new Date(),
+//         details: {
+//           email: newUser.email,
+//           userAgent: req.headers["user-agent"],
+//         },
+//       });
+//     } catch (logErr) {
+//       console.error("⚠️ Failed to log activity:", logErr.message);
+//     }
+
+//     res.json({
+//       success: true,
+//       message: "User registered successfully! OTP sent to your email.",
+//     });
+//   } catch (error) {
+//     console.error("createUser error:", error.message);
+//     res.status(500).json({ success: false, message: "Internal server error!" });
+//   }
+// };
+
+
+// const createUser = async (req, res) => {
+//   const { userName, email, phoneNumber, password } = req.body;
+
+//   if (!userName || !email || !phoneNumber || !password) {
+//     return res.status(400).json({ success: false, message: "Please enter all details!" });
+//   }
+
+//   const passwordRegex =
+//     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
+
+//   if (!passwordRegex.test(password)) {
+//     return res.status(400).json({
+//       success: false,
+//       message:
+//         "Password must contain uppercase, lowercase, number, special character and be 6+ characters long",
+//     });
+//   }
+
+//   try {
+//     const normalizedEmail = email.toLowerCase();
+//     const existingUser = await userModel.findOne({ email: normalizedEmail });
+
+//     if (existingUser) {
+//       return res.status(400).json({ success: false, message: "User already exists!" });
+//     }
+
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     const recentPasswords = existingUser?.passwordHistory || [];
+//     const isReused = await Promise.any(
+//       recentPasswords.map((oldHash) => bcrypt.compare(password, oldHash))
+//     ).catch(() => false);
+
+//     if (isReused) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "This password was recently used. Please choose a different one.",
+//       });
+//     }
+
+//     const updatedPasswordHistory = [hashedPassword];
+//     if (recentPasswords.length > 0) {
+//       updatedPasswordHistory.push(...recentPasswords.slice(0, 2));
+//     }
+
+//     const otp = Math.floor(100000 + Math.random() * 900000);
+//     const otpExpires = Date.now() + 10 * 60 * 1000;
+//     console.log(`📩 OTP for ${normalizedEmail}: ${otp}`);
+
+//     const newUser = new userModel({
+//       userName,
+//       email: normalizedEmail,
+//       phoneNumber,
+//       password: hashedPassword,
+//       storedOTP: otp,
+//       storedOTPExpires: otpExpires,
+//       isVerified: false,
+//       passwordHistory: updatedPasswordHistory,
+//       passwordLastChanged: new Date(),
+//     });
+
+//     await newUser.save();
+//     await sendRegisterOtp(normalizedEmail, otp);
+
+//     // ✅ Log activity
+//     try {
+//       const ActivityLog = require("../models/activityLogModel");
+//       await ActivityLog.create({
+//         user: newUser._id,
+//         action: "register_success",
+//         ipAddress: req.ip === "::1" ? "127.0.0.1" : req.ip,
+//         timestamp: new Date(),
+//         details: {
+//           email: newUser.email,
+//           userAgent: req.headers["user-agent"],
+//         },
+//       });
+//     } catch (logErr) {
+//       console.error("⚠️ Failed to log activity:", logErr.message);
+//     }
+
+//     res.json({
+//       success: true,
+//       message: "User registered successfully! OTP sent to your email.",
+//     });
+//   } catch (error) {
+//     console.error("createUser error:", error.message);
+//     res.status(500).json({ success: false, message: "Internal server error!" });
+//   }
+// };
+
+
 const createUser = async (req, res) => {
   const { userName, email, phoneNumber, password } = req.body;
 
@@ -210,24 +375,43 @@ const createUser = async (req, res) => {
   if (!passwordRegex.test(password)) {
     return res.status(400).json({
       success: false,
-      message: "Password must contain uppercase, lowercase, number, special character and be 6+ characters long",
+      message:
+        "Password must contain uppercase, lowercase, number, special character and be 6+ characters long",
     });
   }
 
   try {
     const normalizedEmail = email.toLowerCase();
-
     const existingUser = await userModel.findOne({ email: normalizedEmail });
+
     if (existingUser) {
       return res.status(400).json({ success: false, message: "User already exists!" });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const recentPasswords = existingUser?.passwordHistory || [];
+    const isReused = await Promise.any(
+      recentPasswords.map((oldHash) => bcrypt.compare(password, oldHash))
+    ).catch(() => false);
+
+    if (isReused) {
+      return res.status(400).json({
+        success: false,
+        message: "This password was recently used. Please choose a different one.",
+      });
+    }
+   const passwordExpiryDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days
+    const updatedPasswordHistory = [hashedPassword];
+    if (recentPasswords.length > 0) {
+      updatedPasswordHistory.push(...recentPasswords.slice(0, 2));
+    }
+
     const otp = Math.floor(100000 + Math.random() * 900000);
     const otpExpires = Date.now() + 10 * 60 * 1000;
-
     console.log(`📩 OTP for ${normalizedEmail}: ${otp}`);
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+ 
 
     const newUser = new userModel({
       userName,
@@ -237,14 +421,17 @@ const createUser = async (req, res) => {
       storedOTP: otp,
       storedOTPExpires: otpExpires,
       isVerified: false,
+      passwordHistory: updatedPasswordHistory,
+      passwordLastChanged: new Date(),
+      passwordExpiresAt: passwordExpiryDate, 
     });
 
     await newUser.save();
     await sendRegisterOtp(normalizedEmail, otp);
 
-    // ✅ Log activity after user creation
+    // ✅ Log activity
     try {
-      const ActivityLog = require("../models/activityLogModel"); // if not already imported
+      const ActivityLog = require("../models/activityLogModel");
       await ActivityLog.create({
         user: newUser._id,
         action: "register_success",
@@ -1172,6 +1359,102 @@ const { decrypt } = require("../utils/encryption"); // ✅ import decryption
 
 const { logActivity } = require("../service/logService"); // ✅ Import
 
+// const bookishUserLogin = async (req, res) => {
+//   const { email, password, captchaToken } = req.body;
+
+//   const inputEmail = Array.isArray(email) ? email[0] : email;
+//   const inputPassword = Array.isArray(password) ? password[0] : password;
+//   const inputCaptcha = Array.isArray(captchaToken) ? captchaToken[0] : captchaToken;
+
+//   if (!inputEmail || !inputPassword || !inputCaptcha) {
+//     return res.status(400).json({ success: false, message: "Email, password, and CAPTCHA are required!" });
+//   }
+
+//   try {
+//     const allUsers = await userModel.find();
+//     let foundUser = null;
+
+//     for (const user of allUsers) {
+//       const decryptedEmail = decrypt(user.email);
+//       if (decryptedEmail && decryptedEmail.toLowerCase() === inputEmail.toLowerCase()) {
+//         foundUser = user;
+//         break;
+//       }
+//     }
+
+//     if (!foundUser) {
+//       await logActivity(req, null, "USER_LOGIN_FAIL", "FATAL", {
+//         email: inputEmail,
+//         reason: "User not found",
+//       });
+//       return res.status(400).json({ success: false, message: "User not found" });
+//     }
+
+//     if (foundUser.blockExpires && foundUser.blockExpires > Date.now()) {
+//       await logActivity(req, foundUser._id, "ACCOUNT_LOCKED", "FATAL", {
+//         reason: "Account locked",
+//         blockExpires: foundUser.blockExpires,
+//       });
+
+//       return res.status(429).json({
+//         success: false,
+//         message: `Account is temporarily blocked. Try again in ${Math.ceil((foundUser.blockExpires - Date.now()) / 60000)} minutes.`,
+//       });
+//     }
+
+//     const isPasswordValid = await bcrypt.compare(inputPassword, foundUser.password);
+//     if (!isPasswordValid) {
+//       foundUser.loginAttempts += 1;
+
+//       const severity = foundUser.loginAttempts >= MAX_LOGIN_ATTEMPTS ? "FATAL" : "WARN";
+//       const reason = foundUser.loginAttempts >= MAX_LOGIN_ATTEMPTS
+//         ? "Too many failed login attempts. Account locked."
+//         : "Incorrect password";
+
+//       if (foundUser.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+//         foundUser.blockExpires = Date.now() + BLOCK_DURATION;
+//       }
+
+//       await foundUser.save();
+
+//       await logActivity(req, foundUser._id, "USER_LOGIN_FAIL", severity, {
+//         reason,
+//         attempts: foundUser.loginAttempts,
+//       });
+
+//       return res.status(severity === "FATAL" ? 429 : 400).json({
+//         success: false,
+//         message: reason,
+//       });
+//     }
+
+//     foundUser.loginAttempts = 0;
+//     foundUser.blockExpires = null;
+
+//     const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+//     foundUser.otp = generatedOTP;
+//     foundUser.otpExpires = Date.now() + 5 * 60 * 1000;
+//     await foundUser.save();
+
+//     await sendRegisterOtp(inputEmail, generatedOTP);
+
+//     await logActivity(req, foundUser._id, "LOGIN_SUCCESS", "INFO", {
+//       email: inputEmail,
+//     });
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "OTP sent to your email.",
+//       userId: foundUser._id,
+//     });
+//   } catch (err) {
+//     console.error("Login error:", err.message);
+//     return res.status(500).json({ success: false, message: "Something went wrong." });
+//   }
+// };
+
+
+
 const bookishUserLogin = async (req, res) => {
   const { email, password, captchaToken } = req.body;
 
@@ -1180,7 +1463,10 @@ const bookishUserLogin = async (req, res) => {
   const inputCaptcha = Array.isArray(captchaToken) ? captchaToken[0] : captchaToken;
 
   if (!inputEmail || !inputPassword || !inputCaptcha) {
-    return res.status(400).json({ success: false, message: "Email, password, and CAPTCHA are required!" });
+    return res.status(400).json({
+      success: false,
+      message: "Email, password, and CAPTCHA are required!",
+    });
   }
 
   try {
@@ -1200,7 +1486,10 @@ const bookishUserLogin = async (req, res) => {
         email: inputEmail,
         reason: "User not found",
       });
-      return res.status(400).json({ success: false, message: "User not found" });
+      return res.status(400).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
     if (foundUser.blockExpires && foundUser.blockExpires > Date.now()) {
@@ -1211,44 +1500,63 @@ const bookishUserLogin = async (req, res) => {
 
       return res.status(429).json({
         success: false,
-        message: `Account is temporarily blocked. Try again in ${Math.ceil((foundUser.blockExpires - Date.now()) / 60000)} minutes.`,
+        message: `Account is temporarily blocked. Try again in ${Math.ceil(
+          (foundUser.blockExpires - Date.now()) / 60000
+        )} minutes.`,
       });
     }
 
-    const isPasswordValid = await bcrypt.compare(inputPassword, foundUser.password);
-    if (!isPasswordValid) {
-      foundUser.loginAttempts += 1;
+const isPasswordValid = await bcrypt.compare(inputPassword, foundUser.password);
+if (!isPasswordValid) {
+  foundUser.loginAttempts += 1;
 
-      const severity = foundUser.loginAttempts >= MAX_LOGIN_ATTEMPTS ? "FATAL" : "WARN";
-      const reason = foundUser.loginAttempts >= MAX_LOGIN_ATTEMPTS
-        ? "Too many failed login attempts. Account locked."
-        : "Incorrect password";
+  let reason = "Incorrect password";
+  let responseStatus = 400;
 
-      if (foundUser.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
-        foundUser.blockExpires = Date.now() + BLOCK_DURATION;
-      }
+  if (foundUser.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+    foundUser.blockExpires = Date.now() + BLOCK_DURATION;
+    reason = "Too many failed login attempts. Account locked.";
+    responseStatus = 429;
+  }
 
-      await foundUser.save();
+  await foundUser.save();
 
-      await logActivity(req, foundUser._id, "USER_LOGIN_FAIL", severity, {
-        reason,
-        attempts: foundUser.loginAttempts,
+  const severity = responseStatus === 429 ? "FATAL" : "WARN";
+
+  await logActivity(req, foundUser._id, "USER_LOGIN_FAIL", severity, {
+    reason,
+    attempts: foundUser.loginAttempts,
+  });
+
+  return res.status(responseStatus).json({
+    success: false,
+    message: reason,
+  });
+}
+
+
+    // ✅ Password is valid — Check for expiry
+    if (foundUser.passwordExpiresAt && foundUser.passwordExpiresAt < new Date()) {
+      await logActivity(req, foundUser._id, "PASSWORD_EXPIRED", "WARN", {
+        email: inputEmail,
+        expiredAt: foundUser.passwordExpiresAt,
       });
 
-      return res.status(severity === "FATAL" ? 429 : 400).json({
+      return res.status(403).json({
         success: false,
-        message: reason,
+        message: "Your password has expired. Please update your password.",
       });
     }
 
+    // ✅ Password valid and not expired — proceed with OTP
     foundUser.loginAttempts = 0;
     foundUser.blockExpires = null;
 
     const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
     foundUser.otp = generatedOTP;
     foundUser.otpExpires = Date.now() + 5 * 60 * 1000;
-    await foundUser.save();
 
+    await foundUser.save();
     await sendRegisterOtp(inputEmail, generatedOTP);
 
     await logActivity(req, foundUser._id, "LOGIN_SUCCESS", "INFO", {
@@ -1262,10 +1570,12 @@ const bookishUserLogin = async (req, res) => {
     });
   } catch (err) {
     console.error("Login error:", err.message);
-    return res.status(500).json({ success: false, message: "Something went wrong." });
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong.",
+    });
   }
 };
-
 
 
 // const verifyOTP = async (req, res) => {

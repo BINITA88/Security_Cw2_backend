@@ -11,6 +11,8 @@ function generateHmacSignature(payload, secretKey) {
 
 // POST /api/payment/webhook
 router.post("/webhook", express.json(), async (req, res) => {
+      console.log('📩 Webhook received from Khalti:', req.body); // ✅ LOG
+
   const khaltiSignature = req.headers["x-khalti-signature"];
   const secretKey = process.env.KHALTI_SECRET_KEY;
 

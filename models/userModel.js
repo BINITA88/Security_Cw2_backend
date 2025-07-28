@@ -1,7 +1,7 @@
 // const mongoose = require("mongoose");
 
 // const userSchema = new mongoose.Schema({
-  
+
 //   email: {
 //     type: String,
 //     required: true,
@@ -24,7 +24,7 @@
 //     enum: ['user', 'admin'],
 //     default: 'user',
 //   },
-  
+
 //   isAdmin: {
 //     type: Boolean,
 //     default: false,
@@ -86,7 +86,7 @@
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  
+
   email: {
     type: String,
     required: true,
@@ -104,12 +104,23 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-    role: {
+  role: {
     type: String,
     enum: ['user', 'admin'],
     default: 'user',
   },
-  
+  passwordHistory: {
+    type: [String],
+    default: [],
+  },
+  passwordLastChanged: {
+    type: Date,
+    default: Date.now,
+  },
+  passwordExpiresAt: {
+  type: Date,
+  },
+
   isAdmin: {
     type: Boolean,
     default: false,

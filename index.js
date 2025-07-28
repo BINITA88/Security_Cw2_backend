@@ -33,8 +33,7 @@ app.use(
   express.static(path.join(__dirname, "public/products"))
 );
 
-// ✅ Helmet Configuration
-// --------------------
+
 app.use(
   helmet({
     contentSecurityPolicy: {

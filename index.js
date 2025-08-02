@@ -131,7 +131,6 @@ app.use("/api/stripe",  require("./routes/stripeRoutes"));
 app.get("/api/Bookish-Csrf", csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
-// asad
 app.use((err, req, res, next) => {
   if (err.code === "EBADCSRFTOKEN") {
     res.status(403).json({ success: false, message: "Invalid CSRF token" });

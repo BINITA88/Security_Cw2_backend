@@ -96,7 +96,6 @@ app.use(
 // asasad
 app.use(accessFromData());
 
-// use hpp to prevent http parameter pollution
 const hpp = require("hpp");
 const { default: Stripe } = require("stripe");
 app.use(hpp());

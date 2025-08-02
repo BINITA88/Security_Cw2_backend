@@ -24,7 +24,6 @@ const csrfProtection = csrf({ cookie: true });
 
 app.use(express.json());
 
-// app.use(express.static("./public"));
 
 const ProtectImage = require("./middleware/imageHotlinkProtect"); 
 app.use(

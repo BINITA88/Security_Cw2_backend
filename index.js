@@ -93,7 +93,6 @@ app.use(
   })
 );
 
-// asasad
 app.use(accessFromData());
 
 const hpp = require("hpp");

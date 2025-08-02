@@ -21,7 +21,7 @@ app.use(cookieParser());
 
 const csrfProtection = csrf({ cookie: true }); 
 
-// Express Json Config
+
 app.use(express.json());
 
 // app.use(express.static("./public"));

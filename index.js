@@ -1,4 +1,3 @@
-// Importing the packages (express)
 const express = require("express");
 const connectDatabase = require("./data/database");
 const dotenv = require("dotenv");
